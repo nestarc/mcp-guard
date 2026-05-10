@@ -11,10 +11,10 @@ function optionValue(arg: string, option: string, args: string[], index: number)
 }
 
 function mountSource(spec: string): string | undefined {
-  return spec
-    .split(',')
-    .find((part) => part.startsWith('source='))
-    ?.slice('source='.length);
+  const part = spec.split(',').find((candidate) => candidate.startsWith('source=') || candidate.startsWith('src='));
+  if (part?.startsWith('source=')) return part.slice('source='.length);
+  if (part?.startsWith('src=')) return part.slice('src='.length);
+  return undefined;
 }
 
 function volumeHostPath(spec: string): string | undefined {

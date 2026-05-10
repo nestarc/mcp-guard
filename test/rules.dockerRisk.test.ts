@@ -98,6 +98,12 @@ describe('dockerRiskRule (MCPG006)', () => {
     ).toHaveLength(1);
   });
 
+  it('flags --mount with docker.sock src alias', () => {
+    expect(
+      dockerRiskRule.run(server('docker', ['run', '--mount', 'type=bind,src=/var/run/docker.sock,target=/sock', 'img']))
+    ).toHaveLength(1);
+  });
+
   it('flags --mount with root source', () => {
     expect(
       dockerRiskRule.run(server('docker', ['run', '--mount', 'type=bind,source=/,target=/host', 'img']))
@@ -107,6 +113,12 @@ describe('dockerRiskRule (MCPG006)', () => {
   it('flags --mount= with root source', () => {
     expect(
       dockerRiskRule.run(server('docker', ['run', '--mount=type=bind,source=/,target=/host', 'img']))
+    ).toHaveLength(1);
+  });
+
+  it('flags --mount= with root src alias', () => {
+    expect(
+      dockerRiskRule.run(server('docker', ['run', '--mount=type=bind,src=/,target=/host', 'img']))
     ).toHaveLength(1);
   });
 
