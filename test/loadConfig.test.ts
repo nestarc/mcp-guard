@@ -11,7 +11,7 @@ describe('loadConfig', () => {
     expect(data).toEqual({});
   });
 
-  it('parses JSONC with comments', async () => {
+  it('parses JSONC with comments and trailing commas', async () => {
     const data = await loadConfig(fixture('jsonc.jsonc'));
     expect(data).toMatchObject({ mcpServers: { fs: { command: 'node' } } });
   });
@@ -21,6 +21,10 @@ describe('loadConfig', () => {
   });
 
   it('throws LoadError on malformed JSON', async () => {
-    await expect(loadConfig(fixture('malformed.json'))).rejects.toBeInstanceOf(LoadError);
+    const filePath = fixture('malformed.json');
+    await expect(loadConfig(filePath)).rejects.toBeInstanceOf(LoadError);
+    await expect(loadConfig(filePath)).rejects.toThrow(
+      /^Failed to parse .*malformed\.json: .+ at offset \d+$/
+    );
   });
 });

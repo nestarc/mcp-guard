@@ -3,7 +3,7 @@
   "mcpServers": {
     "fs": {
       "command": "node",
-      "args": ["./dist/server.js"]
-    }
+      "args": ["./dist/server.js"],
+    },
   }
 }
