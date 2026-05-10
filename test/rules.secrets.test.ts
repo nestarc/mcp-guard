@@ -8,6 +8,12 @@ const server = (env: Record<string, unknown>): McpServerConfig => ({
   raw: { env },
 });
 
+const serverWithFields = (fields: Partial<McpServerConfig>): McpServerConfig => ({
+  name: 's',
+  raw: fields,
+  ...fields,
+});
+
 describe('secretsRule (MCPG001)', () => {
   it('flags GITHUB_TOKEN with non-empty long value as high', () => {
     const f = secretsRule.run(server({ GITHUB_TOKEN: 'ghp_aaaaaaaaaaaaaaaaaa' }));
@@ -98,5 +104,31 @@ describe('secretsRule (MCPG001)', () => {
     const f = secretsRule.run(server({ API_KEY: 123456789 }));
     expect(f).toHaveLength(1);
     expect(f[0]!.severity).toBe('high');
+  });
+
+  it('flags secret-like header keys without printing values', () => {
+    const secret = 'Bearer ghp_super_secret_value_12345';
+    const findings = secretsRule.run(
+      serverWithFields({
+        headers: { Authorization: secret, 'X-API-Key': 'secret-value-12345' },
+      })
+    );
+
+    expect(findings).toHaveLength(2);
+    expect(findings.map((finding) => finding.path)).toEqual([
+      'mcpServers.s.headers.Authorization',
+      'mcpServers.s.headers.X-API-Key',
+    ]);
+    expect(JSON.stringify(findings)).not.toContain(secret);
+  });
+
+  it('does not flag non-secret header keys', () => {
+    const findings = secretsRule.run(
+      serverWithFields({
+        headers: { Accept: 'application/json' },
+      })
+    );
+
+    expect(findings).toEqual([]);
   });
 });

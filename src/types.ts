@@ -5,8 +5,11 @@ export interface McpServerConfig {
   command?: string;
   args?: string[];
   env?: Record<string, unknown>;
+  headers?: Record<string, unknown>;
+  envFile?: string;
   url?: string;
   transport?: string;
+  type?: string;
   raw: unknown;
 }
 

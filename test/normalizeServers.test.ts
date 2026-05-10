@@ -79,4 +79,41 @@ describe('normalizeServers', () => {
     expect(result[0]).toMatchObject({ name: 'x', url: 'https://example.com' });
     expect(result[0]!.command).toBeUndefined();
   });
+
+  it('preserves headers, envFile, and type fields from real client configs', () => {
+    const result = normalizeServers({
+      mcpServers: {
+        remote: {
+          type: 'sse',
+          url: 'https://api.example.com/mcp',
+          headers: { Authorization: 'Bearer secret-token' },
+          envFile: '.env.local',
+        },
+      },
+    });
+
+    expect(result[0]).toMatchObject({
+      name: 'remote',
+      type: 'sse',
+      url: 'https://api.example.com/mcp',
+      headers: { Authorization: 'Bearer secret-token' },
+      envFile: '.env.local',
+    });
+  });
+
+  it('omits invalid headers and envFile values in malformed entries', () => {
+    const result = normalizeServers({
+      mcpServers: {
+        remote: {
+          headers: ['Authorization'],
+          envFile: 123,
+          type: 'http',
+        },
+      },
+    });
+
+    expect(result[0]!.type).toBe('http');
+    expect(result[0]!.headers).toBeUndefined();
+    expect(result[0]!.envFile).toBeUndefined();
+  });
 });

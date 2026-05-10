@@ -66,6 +66,18 @@ describe('plainHttpRule (MCPG004)', () => {
   it('does not flag when url absent', () => {
     expect(plainHttpRule.run(server(undefined))).toEqual([]);
   });
+
+  it('keeps MCPG004 behavior when transport type is provided with plain HTTP URL', () => {
+    const findings = plainHttpRule.run({
+      name: 's',
+      url: 'http://localhost:3000/mcp',
+      type: 'streamable-http',
+      raw: {},
+    });
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0]!.ruleId).toBe('MCPG004');
+  });
 });
 
 describe('publicRemoteEndpointRule (MCPG008)', () => {
@@ -162,5 +174,17 @@ describe('publicRemoteEndpointRule (MCPG008)', () => {
 
   it('does not flag invalid URL', () => {
     expect(publicRemoteEndpointRule.run(server('not-a-url'))).toEqual([]);
+  });
+
+  it('keeps MCPG008 behavior when transport type is provided with public HTTPS URL', () => {
+    const findings = publicRemoteEndpointRule.run({
+      name: 's',
+      url: 'https://api.example.com/mcp',
+      type: 'sse',
+      raw: {},
+    });
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0]!.ruleId).toBe('MCPG008');
   });
 });

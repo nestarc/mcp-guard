@@ -6,8 +6,11 @@ const EntrySchema = z
     command: z.string().optional(),
     args: z.array(z.string()).optional(),
     env: z.record(z.string(), z.unknown()).optional(),
+    headers: z.record(z.string(), z.unknown()).optional(),
+    envFile: z.string().optional(),
     url: z.string().optional(),
     transport: z.string().optional(),
+    type: z.string().optional(),
   })
   .passthrough();
 
@@ -19,8 +22,11 @@ interface ServerConfigFields {
   command?: string | undefined;
   args?: string[] | undefined;
   env?: Record<string, unknown> | undefined;
+  headers?: Record<string, unknown> | undefined;
+  envFile?: string | undefined;
   url?: string | undefined;
   transport?: string | undefined;
+  type?: string | undefined;
 }
 
 function buildServerConfig(
@@ -32,8 +38,11 @@ function buildServerConfig(
   if (values.command !== undefined) server.command = values.command;
   if (values.args !== undefined) server.args = values.args;
   if (values.env !== undefined) server.env = values.env;
+  if (values.headers !== undefined) server.headers = values.headers;
+  if (values.envFile !== undefined) server.envFile = values.envFile;
   if (values.url !== undefined) server.url = values.url;
   if (values.transport !== undefined) server.transport = values.transport;
+  if (values.type !== undefined) server.type = values.type;
   return server;
 }
 
@@ -68,8 +77,11 @@ export function normalizeServers(raw: unknown, opts: NormalizeOptions = {}): Mcp
             command: parsed.data.command,
             args: parsed.data.args,
             env: parsed.data.env,
+            headers: parsed.data.headers,
+            envFile: parsed.data.envFile,
             url: parsed.data.url,
             transport: parsed.data.transport,
+            type: parsed.data.type,
           },
           entry
         )
@@ -89,8 +101,14 @@ export function normalizeServers(raw: unknown, opts: NormalizeOptions = {}): Mcp
               e['env'] && typeof e['env'] === 'object' && !Array.isArray(e['env'])
                 ? (e['env'] as Record<string, unknown>)
                 : undefined,
+            headers:
+              e['headers'] && typeof e['headers'] === 'object' && !Array.isArray(e['headers'])
+                ? (e['headers'] as Record<string, unknown>)
+                : undefined,
+            envFile: typeof e['envFile'] === 'string' ? e['envFile'] : undefined,
             url: typeof e['url'] === 'string' ? e['url'] : undefined,
             transport: typeof e['transport'] === 'string' ? e['transport'] : undefined,
+            type: typeof e['type'] === 'string' ? e['type'] : undefined,
           },
           entry
         )

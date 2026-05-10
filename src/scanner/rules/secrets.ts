@@ -10,6 +10,9 @@ const SUBSTRINGS = [
   'PRIVATE_KEY',
   'CREDENTIAL',
   'ACCESS_KEY',
+  'AUTHORIZATION',
+  'COOKIE',
+  'X-API-KEY',
 ];
 
 const PREFIXES = ['AWS_', 'GCP_', 'GOOGLE_', 'AZURE_', 'OPENAI_', 'ANTHROPIC_', 'GITHUB_TOKEN', 'GITLAB_TOKEN'];
@@ -31,25 +34,37 @@ function decideSeverity(value: unknown): Severity {
   return 'high';
 }
 
+function scanRecord(
+  server: McpServerConfig,
+  source: 'env' | 'headers',
+  values: Record<string, unknown> | undefined
+): Finding[] {
+  if (!values) return [];
+  const out: Finding[] = [];
+  for (const [key, value] of Object.entries(values)) {
+    if (!looksSecret(key)) continue;
+    const severity = decideSeverity(value);
+    const label = source === 'env' ? 'environment variables' : 'headers';
+    out.push({
+      ruleId: 'MCPG001',
+      severity,
+      server: server.name,
+      title: `Secret-like value in ${label}`,
+      message: `${source === 'env' ? 'Environment variable' : 'Header'} ${key} appears to contain a secret. Value not shown.`,
+      recommendation:
+        'Move secrets to a secure secret manager or prompt-based auth flow. Avoid committing real values.',
+      path: `mcpServers.${server.name}.${source}.${key}`,
+    });
+  }
+  return out;
+}
+
 export const secretsRule: Rule = {
   id: 'MCPG001',
   run(server: McpServerConfig): Finding[] {
-    if (!server.env) return [];
-    const out: Finding[] = [];
-    for (const [key, value] of Object.entries(server.env)) {
-      if (!looksSecret(key)) continue;
-      const severity = decideSeverity(value);
-      out.push({
-        ruleId: 'MCPG001',
-        severity,
-        server: server.name,
-        title: 'Secret-like value in environment variables',
-        message: `Environment variable ${key} appears to contain a secret. Value not shown.`,
-        recommendation:
-          'Move secrets to a secure secret manager or prompt-based auth flow. Avoid committing real values.',
-        path: `mcpServers.${server.name}.env.${key}`,
-      });
-    }
-    return out;
+    return [
+      ...scanRecord(server, 'env', server.env),
+      ...scanRecord(server, 'headers', server.headers),
+    ];
   },
 };
