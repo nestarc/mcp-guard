@@ -14,6 +14,23 @@ function isLoopback(host: string): boolean {
   return h === 'localhost' || h === '127.0.0.1' || h === '[::1]' || h === '::1';
 }
 
+function normalizeIPv6Host(host: string): string {
+  return host.toLowerCase().replace(/^\[(.*)\]$/, '$1');
+}
+
+function isLocalIPv6(host: string): boolean {
+  const h = normalizeIPv6Host(host);
+  if (!h.includes(':')) return false;
+  if (h === '::1') return true;
+  const firstSegment = h.split(':', 1)[0];
+  if (!firstSegment) return false;
+  const first = Number.parseInt(firstSegment, 16);
+  if (Number.isNaN(first)) return false;
+  if (first >= 0xfe80 && first <= 0xfebf) return true;
+  if (first >= 0xfc00 && first <= 0xfdff) return true;
+  return false;
+}
+
 function isPrivateIPv4(host: string): boolean {
   const m = host.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
   if (!m) return false;
@@ -29,7 +46,8 @@ function isPrivateIPv4(host: string): boolean {
 export const plainHttpRule: Rule = {
   id: 'MCPG004',
   run(server: McpServerConfig): Finding[] {
-    if (!server.url || !server.url.startsWith('http://')) return [];
+    const url = parseUrl(server.url);
+    if (!url || url.protocol !== 'http:') return [];
     return [
       {
         ruleId: 'MCPG004',
@@ -47,10 +65,9 @@ export const plainHttpRule: Rule = {
 export const publicRemoteEndpointRule: Rule = {
   id: 'MCPG008',
   run(server: McpServerConfig): Finding[] {
-    if (!server.url || !server.url.startsWith('https://')) return [];
     const url = parseUrl(server.url);
-    if (!url) return [];
-    if (isLoopback(url.hostname) || isPrivateIPv4(url.hostname)) return [];
+    if (!url || url.protocol !== 'https:') return [];
+    if (isLoopback(url.hostname) || isPrivateIPv4(url.hostname) || isLocalIPv6(url.hostname)) return [];
     return [
       {
         ruleId: 'MCPG008',
