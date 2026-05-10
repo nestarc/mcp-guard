@@ -22,6 +22,22 @@ describe('normalizeServers', () => {
     expect(result[0]).toMatchObject({ name: 'api', url: 'https://example.com' });
   });
 
+  it('falls back to servers when mcpServers is unusable', () => {
+    const warn: string[] = [];
+    const result = normalizeServers(
+      {
+        mcpServers: [],
+        servers: {
+          api: { url: 'https://example.com' },
+        },
+      },
+      { onWarn: (m) => warn.push(m) }
+    );
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ name: 'api', url: 'https://example.com' });
+    expect(warn).toEqual([]);
+  });
+
   it('returns empty array and warns when neither key present', () => {
     const warn: string[] = [];
     const result = normalizeServers({}, { onWarn: (m) => warn.push(m) });
@@ -51,6 +67,16 @@ describe('normalizeServers', () => {
 
   it('coerces non-string command to undefined (best-effort)', () => {
     const result = normalizeServers({ mcpServers: { x: { command: 123 } } });
+    expect(result[0]!.command).toBeUndefined();
+  });
+
+  it('preserves valid fields while omitting invalid fields in malformed entries', () => {
+    const result = normalizeServers({
+      mcpServers: {
+        x: { command: 123, url: 'https://example.com' },
+      },
+    });
+    expect(result[0]).toMatchObject({ name: 'x', url: 'https://example.com' });
     expect(result[0]!.command).toBeUndefined();
   });
 });

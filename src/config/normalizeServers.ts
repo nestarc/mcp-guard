@@ -37,14 +37,22 @@ function buildServerConfig(
   return server;
 }
 
+function isServerMap(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 export function normalizeServers(raw: unknown, opts: NormalizeOptions = {}): McpServerConfig[] {
   if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
     throw new LoadError('Top-level value must be an object');
   }
 
   const obj = raw as Record<string, unknown>;
-  const map = (obj['mcpServers'] ?? obj['servers']) as Record<string, unknown> | undefined;
-  if (!map || typeof map !== 'object' || Array.isArray(map)) {
+  const map = isServerMap(obj['mcpServers'])
+    ? obj['mcpServers']
+    : isServerMap(obj['servers'])
+      ? obj['servers']
+      : undefined;
+  if (!map) {
     opts.onWarn?.('No `mcpServers` or `servers` key found at top level.');
     return [];
   }
