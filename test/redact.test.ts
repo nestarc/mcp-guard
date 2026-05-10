@@ -22,6 +22,14 @@ describe('redactHome', () => {
     expect(redactHome('/Users/bob/project', '/Users/alice')).toBe('/Users/bob/project');
   });
 
+  it('does not modify POSIX sibling home prefix', () => {
+    expect(redactHome('/Users/alice2/project', '/Users/alice')).toBe('/Users/alice2/project');
+  });
+
+  it('does not modify Windows sibling home prefix', () => {
+    expect(redactHome('C:\\Users\\alice2\\project', 'C:\\Users\\alice')).toBe('C:\\Users\\alice2\\project');
+  });
+
   it('replaces home exact match with ~', () => {
     expect(redactHome('/Users/alice', '/Users/alice')).toBe('~');
   });

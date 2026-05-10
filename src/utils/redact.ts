@@ -11,6 +11,7 @@ export function redactHome(input: string, home: string = os.homedir()): string {
     if (input === h) return '~';
     if (input.startsWith(h)) {
       const rest = input.slice(h.length);
+      if (!rest.startsWith('/') && !rest.startsWith('\\')) continue;
       // rest starts with separator (\ or /) - keep it as-is so output is ~/x or ~\x.
       return '~' + rest;
     }
