@@ -3,7 +3,7 @@ import type { Finding, McpServerConfig, Rule } from '../../types.js';
 const PATTERNS: Array<{ id: string; re: RegExp; label: string }> = [
   {
     id: 'pipe',
-    re: /(curl|wget)\s+[^|]+\|\s*(sh|bash|zsh|fish)\b/i,
+    re: /\b(curl|wget)\b\s+[^|]+\|\s*(sh|bash|zsh|fish)\b/i,
     label: 'pipe-to-shell download',
   },
   { id: 'rmrf', re: /\brm\s+-(rf|fr)\b/i, label: 'recursive forced removal' },
