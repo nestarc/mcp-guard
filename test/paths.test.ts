@@ -8,7 +8,9 @@ describe('isBroadPath', () => {
     '$HOME',
     '%USERPROFILE%',
     '/Users',
+    '/Users/',
     '/home',
+    '/home/',
     '/Users/alice',
     '/home/alice',
     'C:',
@@ -16,6 +18,7 @@ describe('isBroadPath', () => {
     'C:/',
     'D:\\',
     'C:\\Users',
+    'C:/Users',
     'C:\\Users\\alice',
     'C:/Users/alice',
   ])('returns true for broad path %s', (p) => {
@@ -35,11 +38,11 @@ describe('isBroadPath', () => {
 });
 
 describe('isParentTraversal', () => {
-  it.each(['..', '../..', '../../foo', '..\\bar'])('detects parent traversal in %s', (p) => {
+  it.each(['..', '../..', '../../foo', '..\\bar', 'foo/../bar', 'foo\\..\\bar'])('detects parent traversal in %s', (p) => {
     expect(isParentTraversal(p)).toBe(true);
   });
 
-  it.each(['./foo', 'foo/..bar', 'src'])('does not flag %s', (p) => {
+  it.each(['./foo', 'foo/..bar', 'foo/.../bar', 'src'])('does not flag %s', (p) => {
     expect(isParentTraversal(p)).toBe(false);
   });
 });

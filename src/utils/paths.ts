@@ -1,4 +1,4 @@
-const EXACT_BROAD = new Set(['/', '~', '$HOME', '%USERPROFILE%', '/Users', '/home']);
+const EXACT_BROAD = new Set(['/', '~', '$HOME', '%USERPROFILE%', '/Users', '/Users/', '/home', '/home/']);
 
 const POSIX_HOME_USER_RE = /^\/(Users|home)\/[^/]+\/?$/;
 const WINDOWS_DRIVE_ROOT_RE = /^[a-zA-Z]:[\\/]?$/;
