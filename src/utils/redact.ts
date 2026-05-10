@@ -19,22 +19,46 @@ export function redactHome(input: string, home: string = os.homedir()): string {
   return input;
 }
 
+function escapeRegExp(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+export function redactHomeInText(input: string, home: string = os.homedir()): string {
+  if (!home) return input;
+
+  let output = redactHome(input, home);
+  const candidates = new Set<string>([home]);
+  if (home.includes('\\')) {
+    candidates.add(home.replace(/\\/g, '/'));
+  }
+
+  for (const candidate of candidates) {
+    const pattern = new RegExp(
+      `(^|[^A-Za-z0-9_])${escapeRegExp(candidate)}(?=$|[\\\\/\\s.,;:!?\\)\\]\\}"'])`,
+      'g'
+    );
+    output = output.replace(pattern, '$1~');
+  }
+
+  return output;
+}
+
 export function redactFinding<T extends { message: string; recommendation?: string; path?: string }>(
   f: T,
   home: string = os.homedir()
 ): T {
   const result = {
     ...f,
-    message: redactHome(f.message, home),
+    message: redactHomeInText(f.message, home),
   };
 
   if (Object.hasOwn(f, 'recommendation') || f.recommendation !== undefined) {
     (result as Record<string, unknown>).recommendation = f.recommendation
-      ? redactHome(f.recommendation, home)
+      ? redactHomeInText(f.recommendation, home)
       : f.recommendation;
   }
   if (Object.hasOwn(f, 'path') || f.path !== undefined) {
-    (result as Record<string, unknown>).path = f.path ? redactHome(f.path, home) : f.path;
+    (result as Record<string, unknown>).path = f.path ? redactHomeInText(f.path, home) : f.path;
   }
 
   return result;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { redactFinding, redactHome } from '../src/utils/redact.js';
+import { redactFinding, redactHome, redactHomeInText } from '../src/utils/redact.js';
 
 describe('redactHome', () => {
   it('replaces POSIX home prefix with ~', () => {
@@ -40,6 +40,29 @@ describe('redactHome', () => {
 
   it('handles empty home gracefully', () => {
     expect(redactHome('/Users/alice', '')).toBe('/Users/alice');
+  });
+});
+
+describe('redactHomeInText', () => {
+  it('redacts home path embedded in a sentence', () => {
+    expect(redactHomeInText('Failed to parse /Users/alice/project/mcp.json', '/Users/alice')).toBe(
+      'Failed to parse ~/project/mcp.json'
+    );
+  });
+
+  it('redacts Windows home path embedded in a sentence', () => {
+    expect(
+      redactHomeInText(
+        'Could not read file: C:\\Users\\alice\\project\\mcp.json',
+        'C:\\Users\\alice'
+      )
+    ).toBe('Could not read file: ~\\project\\mcp.json');
+  });
+
+  it('does not redact sibling home names embedded in text', () => {
+    expect(redactHomeInText('Path: /Users/alice2/project', '/Users/alice')).toBe(
+      'Path: /Users/alice2/project'
+    );
   });
 });
 

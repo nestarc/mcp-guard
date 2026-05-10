@@ -1,6 +1,6 @@
 import os from 'node:os';
 import pc from 'picocolors';
-import { redactFinding as redactFindingFields, redactHome } from '../utils/redact.js';
+import { redactFinding, redactHomeInText } from '../utils/redact.js';
 import type { Finding, ScanResult, Severity } from '../types.js';
 
 export interface TextReporterOptions {
@@ -28,50 +28,6 @@ function colorize(input: string, severity: Severity, color: boolean): string {
   }
 }
 
-function escapeRegExp(input: string): string {
-  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function redactHomeInText(input: string, home: string): string {
-  if (!home) return input;
-
-  let output = redactHome(input, home);
-  const candidates = new Set<string>([home]);
-  if (home.includes('\\')) {
-    candidates.add(home.replace(/\\/g, '/'));
-  }
-
-  for (const candidate of candidates) {
-    const pattern = new RegExp(
-      `(^|[^A-Za-z0-9_])${escapeRegExp(candidate)}(?=$|[\\\\/\\s.,;:!?\\)\\]\\}"'])`,
-      'g'
-    );
-    output = output.replace(pattern, '$1~');
-  }
-
-  return output;
-}
-
-function redactReporterFinding(finding: Finding, home: string): Finding {
-  const redacted = redactFindingFields(finding, home);
-  const result: Finding = {
-    ...redacted,
-    message: redactHomeInText(redacted.message, home),
-  };
-  const resultFields = result as unknown as Record<string, unknown>;
-
-  if (Object.hasOwn(redacted, 'recommendation') || redacted.recommendation !== undefined) {
-    resultFields.recommendation = redacted.recommendation
-      ? redactHomeInText(redacted.recommendation, home)
-      : redacted.recommendation;
-  }
-  if (Object.hasOwn(redacted, 'path') || redacted.path !== undefined) {
-    resultFields.path = redacted.path ? redactHomeInText(redacted.path, home) : redacted.path;
-  }
-
-  return result;
-}
-
 export function renderText(result: ScanResult, opts: TextReporterOptions = {}): string {
   const color = opts.color ?? false;
   const quiet = opts.quiet ?? false;
@@ -93,7 +49,7 @@ export function renderText(result: ScanResult, opts: TextReporterOptions = {}): 
   const findingsByServer = new Map<string, Finding[]>();
   for (const finding of result.findings) {
     const serverFindings = findingsByServer.get(finding.server) ?? [];
-    serverFindings.push(redactReporterFinding(finding, home));
+    serverFindings.push(redactFinding(finding, home));
     findingsByServer.set(finding.server, serverFindings);
   }
 

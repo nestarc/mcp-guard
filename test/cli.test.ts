@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { execFile } from 'node:child_process';
 import { copyFile, mkdir, rm } from 'node:fs/promises';
+import os from 'node:os';
 import { promisify } from 'node:util';
 import path from 'node:path';
 
@@ -103,12 +104,14 @@ describe('cli scan', () => {
 
     expect(result.code).toBe(2);
     expect(result.stderr).toMatch(/parse|failed/i);
+    expect(result.stderr).not.toContain(os.homedir());
   });
 
   it('non-existent file exits 2', async () => {
     const result = await runCli(['scan', fixture('does-not-exist.json')], true);
 
     expect(result.code).toBe(2);
+    expect(result.stderr).not.toContain(os.homedir());
   });
 
   it('invalid --fail-on exits 2', async () => {

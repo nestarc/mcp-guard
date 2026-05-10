@@ -4,6 +4,7 @@ import { renderText } from './reporters/textReporter.js';
 import { scan } from './scanner/scan.js';
 import { meetsThreshold } from './scanner/severity.js';
 import { LoadError, type ScanResult, type Severity } from './types.js';
+import { redactHomeInText } from './utils/redact.js';
 
 const SEVERITIES: Severity[] = ['info', 'low', 'medium', 'high', 'critical'];
 
@@ -43,7 +44,7 @@ async function runScan(target: string, opts: ScanOptions): Promise<number> {
     result = await loadScanResult(target);
   } catch (err) {
     if (err instanceof LoadError) {
-      process.stderr.write(`error: ${err.message}\n`);
+      process.stderr.write(`error: ${redactHomeInText(err.message)}\n`);
       return 2;
     }
     throw err;
