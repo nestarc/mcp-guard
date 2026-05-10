@@ -8,7 +8,7 @@ Part of Nestarc Labs experimental open-source tools for safer backend and AI-ass
 
 ## Status
 
-v0.2.0 pre-release. This project is not yet published to npm.
+Current development version: v0.2.0. The package is published to npm as `@nestarc/mcp-guard`; new versions are published through GitHub Releases.
 
 ## Why
 
@@ -17,8 +17,6 @@ MCP servers can expose local files, environment variables, shell commands, netwo
 It is a static scanner. It does not execute the server and does not make network calls.
 
 ## Install
-
-After the package is published:
 
 ```bash
 npm install -g @nestarc/mcp-guard
@@ -52,10 +50,10 @@ mcp-guard scan --all --list-targets
 | Cursor | Project | `.cursor/mcp.json` |
 | Cursor | User | `~/.cursor/mcp.json` |
 | VS Code | Project | `.vscode/mcp.json` |
-| VS Code | User | Platform-specific VS Code user profile MCP config |
+| VS Code | User | `%APPDATA%\Code\User\mcp.json`, `~/Library/Application Support/Code/User/mcp.json`, or `${XDG_CONFIG_HOME:-~/.config}/Code/User/mcp.json` |
 | Claude Code | Project | `.mcp.json` |
 | Claude Code | User | `~/.claude.json` |
-| Claude Desktop | User | Platform-specific Claude app config directory |
+| Claude Desktop | User | `%APPDATA%\Claude\claude_desktop_config.json` / `config.json`, `~/Library/Application Support/Claude/claude_desktop_config.json` / `config.json`, or `${XDG_CONFIG_HOME:-~/.config}/Claude/claude_desktop_config.json` / `config.json` |
 
 Discovery covers known common locations, not every possible client-specific storage path.
 
@@ -81,6 +79,8 @@ Discovery covers known common locations, not every possible client-specific stor
 | 2 | Invalid input, parse error, missing file, CLI usage error, or unexpected scanner error. |
 
 Without `--fail-on`, findings are reported but do not make the command fail.
+
+In discovery mode, malformed targets are reported as warnings and scanning continues when at least one discovered target scans successfully. If targets are discovered but none scan successfully, the command exits with code 2.
 
 ## Rules
 
@@ -135,9 +135,9 @@ npm ci
 
 ## Release
 
-Releases are published to npm from GitHub Actions when a GitHub Release is published.
+Automated releases publish to npm from GitHub Actions when a GitHub Release is published.
 
-Before the first release, configure npm Trusted Publishing for `@nestarc/mcp-guard` with:
+Before using automated publishing for a package, ensure npm Trusted Publishing is configured for `@nestarc/mcp-guard` with:
 
 | Field | Value |
 | --- | --- |
@@ -147,11 +147,11 @@ Before the first release, configure npm Trusted Publishing for `@nestarc/mcp-gua
 To publish a release:
 
 ```bash
-npm version patch
+npm version minor
 git push --follow-tags
 ```
 
-Then create and publish a GitHub Release for the version tag, such as `v0.1.0`.
+Use `npm version patch` for patch releases. Then create and publish a GitHub Release for the version tag, such as `v0.2.0`.
 
 The release workflow runs `npm ci`, `npm run typecheck`, `npm test`, `npm run build`, and `npm pack --dry-run`, then publishes with provenance using `npm publish --access public --provenance`.
 
