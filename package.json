@@ -56,6 +56,5 @@
     "url": "git+https://github.com/nestarc/mcp-guard.git"
   },
   "homepage": "https://github.com/nestarc/mcp-guard#readme",
-  "bugs": "https://github.com/nestarc/mcp-guard/issues",
-  "packageManager": "pnpm@9.12.0"
+  "bugs": "https://github.com/nestarc/mcp-guard/issues"
 }
