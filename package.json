@@ -1,0 +1,61 @@
+{
+  "name": "@nestarc/mcp-guard",
+  "version": "0.1.0",
+  "description": "Security scanner for MCP servers and configurations.",
+  "type": "module",
+  "bin": {
+    "mcp-guard": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "dev": "tsx src/cli.ts",
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "jsonc-parser": "^3.3.1",
+    "picocolors": "^1.1.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "security",
+    "scanner",
+    "cli",
+    "ai-agents",
+    "devtools",
+    "typescript",
+    "nestarc"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nestarc/mcp-guard.git"
+  },
+  "homepage": "https://github.com/nestarc/mcp-guard#readme",
+  "bugs": "https://github.com/nestarc/mcp-guard/issues",
+  "packageManager": "pnpm@9.12.0"
+}
