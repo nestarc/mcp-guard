@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { redactHome } from '../src/utils/redact.js';
+import { redactFinding, redactHome } from '../src/utils/redact.js';
 
 describe('redactHome', () => {
   it('replaces POSIX home prefix with ~', () => {
@@ -40,5 +40,50 @@ describe('redactHome', () => {
 
   it('handles empty home gracefully', () => {
     expect(redactHome('/Users/alice', '')).toBe('/Users/alice');
+  });
+});
+
+describe('redactFinding', () => {
+  it('redacts finding fields when present and preserves other fields', () => {
+    const metadata = { source: 'fixture' };
+    const finding = {
+      ruleId: 'rule.home',
+      severity: 'high',
+      server: 'filesystem',
+      title: 'Home path exposed',
+      message: '/Users/alice/project/config.json',
+      recommendation: '/Users/alice/project should not be exposed',
+      path: '/Users/alice/project/config.json',
+      metadata,
+    };
+
+    expect(redactFinding(finding, '/Users/alice')).toEqual({
+      ruleId: 'rule.home',
+      severity: 'high',
+      server: 'filesystem',
+      title: 'Home path exposed',
+      message: '~/project/config.json',
+      recommendation: '~/project should not be exposed',
+      path: '~/project/config.json',
+      metadata,
+    });
+  });
+
+  it('does not add absent optional finding fields', () => {
+    const result = redactFinding(
+      {
+        ruleId: 'rule.home',
+        severity: 'low',
+        server: 'filesystem',
+        title: 'Home path exposed',
+        message: '/Users/alice/project/config.json',
+        metadata: { source: 'fixture' },
+      },
+      '/Users/alice'
+    );
+
+    expect(result.message).toBe('~/project/config.json');
+    expect(Object.hasOwn(result, 'recommendation')).toBe(false);
+    expect(Object.hasOwn(result, 'path')).toBe(false);
   });
 });

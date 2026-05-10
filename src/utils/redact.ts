@@ -23,10 +23,19 @@ export function redactFinding<T extends { message: string; recommendation?: stri
   f: T,
   home: string = os.homedir()
 ): T {
-  return {
+  const result = {
     ...f,
     message: redactHome(f.message, home),
-    recommendation: f.recommendation ? redactHome(f.recommendation, home) : f.recommendation,
-    path: f.path ? redactHome(f.path, home) : f.path,
   };
+
+  if (Object.hasOwn(f, 'recommendation') || f.recommendation !== undefined) {
+    (result as Record<string, unknown>).recommendation = f.recommendation
+      ? redactHome(f.recommendation, home)
+      : f.recommendation;
+  }
+  if (Object.hasOwn(f, 'path') || f.path !== undefined) {
+    (result as Record<string, unknown>).path = f.path ? redactHome(f.path, home) : f.path;
+  }
+
+  return result;
 }
