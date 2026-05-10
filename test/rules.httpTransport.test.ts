@@ -12,11 +12,27 @@ const server = (url?: string): McpServerConfig => ({
 });
 
 describe('plainHttpRule (MCPG004)', () => {
+  it('has MCPG004 rule id', () => {
+    expect(plainHttpRule.id).toBe('MCPG004');
+  });
+
   it('flags http://localhost as medium', () => {
     const f = plainHttpRule.run(server('http://localhost:3000/sse'));
     expect(f).toHaveLength(1);
     expect(f[0]!.severity).toBe('medium');
     expect(f[0]!.ruleId).toBe('MCPG004');
+  });
+
+  it('reports MCPG004 finding shape', () => {
+    expect(plainHttpRule.run(server('http://example.com'))[0]).toEqual({
+      ruleId: 'MCPG004',
+      severity: 'medium',
+      server: 's',
+      title: 'Plain HTTP transport',
+      message: 'Server URL uses plain HTTP: http://example.com',
+      recommendation: 'Prefer authenticated HTTPS or a trusted local-only transport.',
+      path: 'mcpServers.s.url',
+    });
   });
 
   it('flags http://example.com as medium', () => {
@@ -33,11 +49,28 @@ describe('plainHttpRule (MCPG004)', () => {
 });
 
 describe('publicRemoteEndpointRule (MCPG008)', () => {
+  it('has MCPG008 rule id', () => {
+    expect(publicRemoteEndpointRule.id).toBe('MCPG008');
+  });
+
   it('flags https://example.com as low', () => {
     const f = publicRemoteEndpointRule.run(server('https://api.example.com'));
     expect(f).toHaveLength(1);
     expect(f[0]!.severity).toBe('low');
     expect(f[0]!.ruleId).toBe('MCPG008');
+  });
+
+  it('reports MCPG008 finding shape', () => {
+    expect(publicRemoteEndpointRule.run(server('https://api.example.com/path'))[0]).toEqual({
+      ruleId: 'MCPG008',
+      severity: 'low',
+      server: 's',
+      title: 'Public remote endpoint',
+      message: 'Server connects to a public remote endpoint: https://api.example.com',
+      recommendation:
+        'Confirm the endpoint is trusted and uses authenticated TLS. Be aware that data may leave your environment.',
+      path: 'mcpServers.s.url',
+    });
   });
 
   it('does not flag https://localhost', () => {
@@ -52,8 +85,20 @@ describe('publicRemoteEndpointRule (MCPG008)', () => {
     expect(publicRemoteEndpointRule.run(server('https://10.0.0.5:3000'))).toEqual([]);
   });
 
+  it('does not flag https://172.16.0.1 (RFC1918)', () => {
+    expect(publicRemoteEndpointRule.run(server('https://172.16.0.1'))).toEqual([]);
+  });
+
+  it('does not flag https://172.31.255.255 (RFC1918)', () => {
+    expect(publicRemoteEndpointRule.run(server('https://172.31.255.255'))).toEqual([]);
+  });
+
   it('does not flag https://192.168.1.5', () => {
     expect(publicRemoteEndpointRule.run(server('https://192.168.1.5'))).toEqual([]);
+  });
+
+  it('does not flag https://169.254.1.1 (link-local)', () => {
+    expect(publicRemoteEndpointRule.run(server('https://169.254.1.1'))).toEqual([]);
   });
 
   it('does not flag http URL (covered by MCPG004)', () => {
