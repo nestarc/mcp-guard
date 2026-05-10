@@ -78,6 +78,10 @@ function validateDiscoveryOptions(
   return opts.client === undefined ? { scope } : { client: opts.client, scope };
 }
 
+function hasDiscoveryOnlyOptions(opts: ScanOptions, scopeWasExplicit: boolean): boolean {
+  return opts.client !== undefined || opts.listTargets === true || scopeWasExplicit;
+}
+
 async function runScan(target: string, opts: ScanOptions): Promise<number> {
   const threshold = validateSharedOptions(opts);
   if (threshold === 2) return 2;
@@ -151,6 +155,10 @@ async function runScanAll(opts: ScanOptions): Promise<number> {
     );
   }
 
+  if (targets.length > 0 && result.summary.targetsScanned === 0) {
+    return 2;
+  }
+
   if (threshold !== undefined) {
     if (result.findings.some((finding) => meetsThreshold(finding.severity, threshold))) {
       return 1;
@@ -183,9 +191,17 @@ async function main(): Promise<void> {
     )
     .option('--no-color', 'disable colored output')
     .option('--quiet', 'print only the summary')
-    .action(async (target: string | undefined, options: ScanOptions) => {
+    .action(async function (this: Command, target: string | undefined, options: ScanOptions) {
       if (options.all && target !== undefined) {
         process.stderr.write('error: scan <path> and --all are mutually exclusive\n');
+        process.exitCode = 2;
+        return;
+      }
+
+      const scopeSource = this.getOptionValueSource('scope');
+      const scopeWasExplicit = scopeSource === 'cli' || scopeSource === 'env';
+      if (!options.all && hasDiscoveryOnlyOptions(options, scopeWasExplicit)) {
+        process.stderr.write('error: --client, --scope, and --list-targets require --all\n');
         process.exitCode = 2;
         return;
       }

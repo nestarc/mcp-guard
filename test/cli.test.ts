@@ -144,6 +144,33 @@ describe('cli scan', () => {
     expect(result.code).toBe(2);
   });
 
+  it('scan <path> --client cursor exits 2', async () => {
+    const result = await runCli(['scan', fixture('safe.json'), '--client', 'cursor'], {
+      expectFail: true,
+    });
+
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain('require --all');
+  });
+
+  it('scan <path> --scope project exits 2', async () => {
+    const result = await runCli(['scan', fixture('safe.json'), '--scope', 'project'], {
+      expectFail: true,
+    });
+
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain('require --all');
+  });
+
+  it('scan <path> --list-targets exits 2', async () => {
+    const result = await runCli(['scan', fixture('safe.json'), '--list-targets'], {
+      expectFail: true,
+    });
+
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain('require --all');
+  });
+
   it('missing scan path exits 2', async () => {
     const result = await runCli(['scan'], { expectFail: true });
 
@@ -236,6 +263,51 @@ describe('cli scan', () => {
       expect(parsed.findings[0].target.client).toBe('cursor');
     } finally {
       await fixtureDir.cleanup();
+    }
+  });
+
+  it('scan --all --client bogus exits 2', async () => {
+    const result = await runCli(['scan', '--all', '--client', 'bogus'], { expectFail: true });
+
+    expect(result.code).toBe(2);
+  });
+
+  it('scan --all --scope bogus exits 2', async () => {
+    const result = await runCli(['scan', '--all', '--scope', 'bogus'], { expectFail: true });
+
+    expect(result.code).toBe(2);
+  });
+
+  it('scan --all --scope project with no targets exits 0 and renders empty aggregate', async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'mcp-guard-cli-empty-'));
+    try {
+      const result = await runCli(['scan', '--all', '--scope', 'project'], { cwd: dir });
+
+      expect(result.code).toBe(0);
+      expect(result.stderr).toContain('warning: no MCP configuration files found');
+      expect(result.stdout).toContain('mcp-guard scan --all');
+      expect(result.stdout).toContain('Targets scanned: 0/0');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('scan --all --scope project with malformed target exits 2 after rendering aggregate', async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'mcp-guard-cli-malformed-'));
+    try {
+      const cursorDir = path.join(dir, '.cursor');
+      await mkdir(cursorDir, { recursive: true });
+      await copyFile(fixture('malformed.json'), path.join(cursorDir, 'mcp.json'));
+
+      const result = await runCli(['scan', '--all', '--scope', 'project'], {
+        cwd: dir,
+        expectFail: true,
+      });
+
+      expect(result.code).toBe(2);
+      expect(result.stdout).toContain('Targets scanned: 0/1');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
     }
   });
 
