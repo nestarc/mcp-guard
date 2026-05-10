@@ -1,0 +1,9 @@
+{
+  // a sample MCP config with comments
+  "mcpServers": {
+    "fs": {
+      "command": "node",
+      "args": ["./dist/server.js"]
+    }
+  }
+}
