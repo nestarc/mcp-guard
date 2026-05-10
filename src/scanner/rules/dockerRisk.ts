@@ -17,9 +17,9 @@ function mountSource(spec: string): string | undefined {
     ?.slice('source='.length);
 }
 
-function volumeHostPath(spec: string): string {
+function volumeHostPath(spec: string): string | undefined {
   const colon = spec.indexOf(':');
-  return colon === -1 ? spec : spec.slice(0, colon);
+  return colon === -1 ? undefined : spec.slice(0, colon);
 }
 
 function findIssues(args: string[]): string[] {
@@ -33,7 +33,7 @@ function findIssues(args: string[]): string[] {
     const volume = optionValue(a, '-v', args, i) ?? optionValue(a, '--volume', args, i);
     if (volume !== undefined) {
       const hostPath = volumeHostPath(volume);
-      if (hostPath.includes('docker.sock')) issues.push('Docker socket mount via -v');
+      if (hostPath?.includes('docker.sock')) issues.push('Docker socket mount via -v');
       else if (hostPath === '/') issues.push('Host root mount via -v');
     }
 

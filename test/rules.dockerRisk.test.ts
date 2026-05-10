@@ -64,6 +64,18 @@ describe('dockerRiskRule (MCPG006)', () => {
     ).toEqual([]);
   });
 
+  it('does not flag no-colon -v docker.sock container path', () => {
+    expect(dockerRiskRule.run(server('docker', ['run', '-v', '/var/run/docker.sock', 'img']))).toEqual([]);
+  });
+
+  it('does not flag no-colon -v root container path', () => {
+    expect(dockerRiskRule.run(server('docker', ['run', '-v', '/', 'img']))).toEqual([]);
+  });
+
+  it('does not flag no-colon --volume root container path', () => {
+    expect(dockerRiskRule.run(server('docker', ['run', '--volume', '/', 'img']))).toEqual([]);
+  });
+
   it('flags -v with root mount', () => {
     expect(dockerRiskRule.run(server('docker', ['run', '-v', '/:/host', 'img']))).toHaveLength(1);
   });
