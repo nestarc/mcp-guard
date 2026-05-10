@@ -35,6 +35,37 @@ export interface ScanResult {
   findings: Finding[];
 }
 
+export interface ScanTargetMetadata {
+  path: string;
+  client: string;
+  scope: 'project' | 'user';
+  labels: string[];
+}
+
+export interface ScanTargetResult extends ScanTargetMetadata {
+  scanned: boolean;
+  serversScanned: number;
+  findings: number;
+  warning?: string;
+}
+
+export interface AggregateFinding extends Finding {
+  target: ScanTargetMetadata;
+}
+
+export interface AggregateScanResult {
+  schemaVersion: '2';
+  targets: ScanTargetResult[];
+  summary: {
+    risk: Severity;
+    targetsDiscovered: number;
+    targetsScanned: number;
+    serversScanned: number;
+    findings: number;
+  };
+  findings: AggregateFinding[];
+}
+
 export interface Rule {
   id: string;
   run(server: McpServerConfig): Finding[];
