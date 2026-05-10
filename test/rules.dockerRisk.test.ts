@@ -40,8 +40,18 @@ describe('dockerRiskRule (MCPG006)', () => {
     ).toHaveLength(1);
   });
 
+  it('flags --volume= with docker.sock mount', () => {
+    expect(
+      dockerRiskRule.run(server('docker', ['run', '--volume=/var/run/docker.sock:/var/run/docker.sock', 'img']))
+    ).toHaveLength(1);
+  });
+
   it('flags -v with root mount', () => {
     expect(dockerRiskRule.run(server('docker', ['run', '-v', '/:/host', 'img']))).toHaveLength(1);
+  });
+
+  it('flags -v= with root mount', () => {
+    expect(dockerRiskRule.run(server('docker', ['run', '-v=/:/host', 'img']))).toHaveLength(1);
   });
 
   it('flags --mount with docker.sock source', () => {
@@ -52,14 +62,32 @@ describe('dockerRiskRule (MCPG006)', () => {
     ).toHaveLength(1);
   });
 
+  it('flags --mount with alternate docker.sock source', () => {
+    expect(
+      dockerRiskRule.run(server('docker', ['run', '--mount', 'type=bind,source=/run/docker.sock,target=/sock', 'img']))
+    ).toHaveLength(1);
+  });
+
   it('flags --mount with root source', () => {
     expect(
       dockerRiskRule.run(server('docker', ['run', '--mount', 'type=bind,source=/,target=/host', 'img']))
     ).toHaveLength(1);
   });
 
+  it('flags --mount= with root source', () => {
+    expect(
+      dockerRiskRule.run(server('docker', ['run', '--mount=type=bind,source=/,target=/host', 'img']))
+    ).toHaveLength(1);
+  });
+
   it('flags podman --privileged', () => {
     expect(dockerRiskRule.run(server('podman', ['run', '--privileged', 'img']))).toHaveLength(1);
+  });
+
+  it('flags docker command path with extension', () => {
+    expect(
+      dockerRiskRule.run(server('C:\\Program Files\\Docker\\docker.exe', ['run', '--privileged', 'img']))
+    ).toHaveLength(1);
   });
 
   it('does not flag normal docker run', () => {

@@ -3,6 +3,20 @@ import { commandBasename } from '../../utils/command.js';
 
 const RUNTIMES = new Set(['docker', 'podman']);
 
+function optionValue(arg: string, option: string, args: string[], index: number): string | undefined {
+  if (arg === option) return args[index + 1];
+  const prefix = `${option}=`;
+  if (arg.startsWith(prefix)) return arg.slice(prefix.length);
+  return undefined;
+}
+
+function mountSource(spec: string): string | undefined {
+  return spec
+    .split(',')
+    .find((part) => part.startsWith('source='))
+    ?.slice('source='.length);
+}
+
 function findIssues(args: string[]): string[] {
   const issues: string[] = [];
   for (let i = 0; i < args.length; i++) {
@@ -11,18 +25,18 @@ function findIssues(args: string[]): string[] {
       issues.push('--privileged flag');
       continue;
     }
-    if (a === '-v' || a === '--volume') {
-      const next = args[i + 1] ?? '';
-      if (next.includes('docker.sock')) issues.push('Docker socket mount via -v');
-      else if (next.startsWith('/:') || next.startsWith('/:/')) issues.push('Host root mount via -v');
+    const volume = optionValue(a, '-v', args, i) ?? optionValue(a, '--volume', args, i);
+    if (volume !== undefined) {
+      if (volume.includes('docker.sock')) issues.push('Docker socket mount via -v');
+      else if (volume.startsWith('/:') || volume.startsWith('/:/')) issues.push('Host root mount via -v');
     }
-    if (a === '--mount') {
-      const next = args[i + 1] ?? '';
-      if (next.includes('source=/var/run/docker.sock')) issues.push('Docker socket mount via --mount');
-      else if (/(^|,)source=\//.test(next) && !/(^|,)source=\.\//.test(next)) {
-        // crude: source=/ but not source=./
-        if (/(^|,)source=\/(,|$)/.test(next)) issues.push('Host root mount via --mount');
-      }
+
+    const mount = optionValue(a, '--mount', args, i);
+    const source = mount === undefined ? undefined : mountSource(mount);
+    if (source?.includes('docker.sock')) {
+      issues.push('Docker socket mount via --mount');
+    } else if (source === '/') {
+      issues.push('Host root mount via --mount');
     }
   }
   return issues;
