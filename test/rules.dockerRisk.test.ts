@@ -21,6 +21,14 @@ describe('dockerRiskRule (MCPG006)', () => {
     expect(f[0]!.ruleId).toBe('MCPG006');
   });
 
+  it('flags --privileged=true', () => {
+    expect(dockerRiskRule.run(server('docker', ['run', '--privileged=true', 'img']))).toHaveLength(1);
+  });
+
+  it('does not flag --privileged=false', () => {
+    expect(dockerRiskRule.run(server('docker', ['run', '--privileged=false', 'img']))).toEqual([]);
+  });
+
   it('reports MCPG006 finding shape', () => {
     expect(dockerRiskRule.run(server('docker', ['run', '--privileged', 'image']))[0]).toEqual({
       ruleId: 'MCPG006',
@@ -44,6 +52,16 @@ describe('dockerRiskRule (MCPG006)', () => {
     expect(
       dockerRiskRule.run(server('docker', ['run', '--volume=/var/run/docker.sock:/var/run/docker.sock', 'img']))
     ).toHaveLength(1);
+  });
+
+  it('does not flag named volume mounted to docker.sock container path', () => {
+    expect(dockerRiskRule.run(server('docker', ['run', '-v', 'cache:/var/run/docker.sock', 'img']))).toEqual([]);
+  });
+
+  it('does not flag host path mounted to docker.sock container path', () => {
+    expect(
+      dockerRiskRule.run(server('docker', ['run', '--volume', '/tmp/socket:/var/run/docker.sock', 'img']))
+    ).toEqual([]);
   });
 
   it('flags -v with root mount', () => {

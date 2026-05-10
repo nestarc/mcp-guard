@@ -17,18 +17,24 @@ function mountSource(spec: string): string | undefined {
     ?.slice('source='.length);
 }
 
+function volumeHostPath(spec: string): string {
+  const colon = spec.indexOf(':');
+  return colon === -1 ? spec : spec.slice(0, colon);
+}
+
 function findIssues(args: string[]): string[] {
   const issues: string[] = [];
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
-    if (a === '--privileged') {
+    if (a === '--privileged' || a === '--privileged=true') {
       issues.push('--privileged flag');
       continue;
     }
     const volume = optionValue(a, '-v', args, i) ?? optionValue(a, '--volume', args, i);
     if (volume !== undefined) {
-      if (volume.includes('docker.sock')) issues.push('Docker socket mount via -v');
-      else if (volume.startsWith('/:') || volume.startsWith('/:/')) issues.push('Host root mount via -v');
+      const hostPath = volumeHostPath(volume);
+      if (hostPath.includes('docker.sock')) issues.push('Docker socket mount via -v');
+      else if (hostPath === '/') issues.push('Host root mount via -v');
     }
 
     const mount = optionValue(a, '--mount', args, i);
