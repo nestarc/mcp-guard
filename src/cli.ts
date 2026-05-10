@@ -173,7 +173,7 @@ async function main(): Promise<void> {
   program
     .name('mcp-guard')
     .description('Security scanner for MCP servers and configurations.')
-    .version('0.1.0');
+    .version('0.2.0');
   program.exitOverride();
 
   program

@@ -147,11 +147,11 @@ Before using automated publishing for a package, ensure npm Trusted Publishing i
 To publish a release:
 
 ```bash
-npm version minor
-git push --follow-tags
+npm version patch --no-git-tag-version
+# update CHANGELOG.md, commit, then create/push the release tag
 ```
 
-Use `npm version patch` for patch releases. Then create and publish a GitHub Release for the version tag, such as `v0.2.0`.
+Prepare the version commit before creating or publishing a GitHub Release. For this release, create and publish the GitHub Release for the existing `v0.2.0` tag once the version commit is on `main`.
 
 The release workflow runs `npm ci`, `npm run typecheck`, `npm test`, `npm run build`, and `npm pack --dry-run`, then publishes with provenance using `npm publish --access public --provenance`.
 

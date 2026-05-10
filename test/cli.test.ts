@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { execFile } from 'node:child_process';
-import { copyFile, mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import { promisify } from 'node:util';
 import path from 'node:path';
@@ -62,6 +62,19 @@ async function withScanAllFixture(): Promise<{ dir: string; cleanup: () => Promi
     cleanup: () => rm(dir, { recursive: true, force: true }),
   };
 }
+
+describe('cli', () => {
+  it('prints the package version for --version', async () => {
+    const packageJson = JSON.parse(await readFile(path.resolve('package.json'), 'utf8')) as {
+      version: string;
+    };
+
+    const result = await runCli(['--version']);
+
+    expect(result.code).toBe(0);
+    expect(result.stdout.trim()).toBe(packageJson.version);
+  });
+});
 
 describe('cli scan', () => {
   it('safe.json exits 0 with text containing Risk:', async () => {
