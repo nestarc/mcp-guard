@@ -29,6 +29,34 @@ describe('dynamicRunnerRule (MCPG003)', () => {
     expect(dynamicRunnerRule.run(server('pnpm', ['--silent', 'dlx', 'pkg']))).toHaveLength(1);
   });
 
+  it('flags yarn dlx even when other args precede', () => {
+    expect(dynamicRunnerRule.run(server('yarn', ['--silent', 'dlx', 'pkg']))).toHaveLength(1);
+  });
+
+  it.each(['C:\\Users\\s\\AppData\\Roaming\\npm\\npx.cmd', '/usr/bin/uvx'])(
+    'normalizes command basename for %s',
+    (command) => {
+      expect(dynamicRunnerRule.run(server(command, ['pkg']))).toHaveLength(1);
+    }
+  );
+
+  it('returns MCPG003 finding details', () => {
+    const f = dynamicRunnerRule.run(server('npx', ['pkg']));
+
+    expect(f).toHaveLength(1);
+    expect(f[0]).toMatchObject({
+      ruleId: 'MCPG003',
+      severity: 'medium',
+      server: 's',
+      title: 'Dynamic package runner',
+      message:
+        'Server uses a dynamic package runner (npx). Packages may be fetched and executed at runtime.',
+      recommendation:
+        'Pin the exact package version or pre-install the dependency. Verify package provenance.',
+      path: 'mcpServers.s.command',
+    });
+  });
+
   it('does not flag yarn install', () => {
     expect(dynamicRunnerRule.run(server('yarn', ['install']))).toEqual([]);
   });
