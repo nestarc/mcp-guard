@@ -46,9 +46,43 @@ describe('secretsRule (MCPG001)', () => {
     expect(f).toHaveLength(1);
   });
 
+  it.each([
+    ['MY_PASSWD'],
+    ['MY_APIKEY'],
+    ['MY_PRIVATE_KEY'],
+    ['MY_CREDENTIAL'],
+    ['MY_ACCESS_KEY'],
+    ['GCP_SERVICE_ACCOUNT'],
+    ['GOOGLE_CLIENT_SECRET'],
+    ['AZURE_CLIENT_SECRET'],
+    ['OPENAI_API_KEY'],
+    ['ANTHROPIC_API_KEY'],
+    ['GITLAB_TOKEN'],
+  ])('flags %s as secret-like', (key) => {
+    const f = secretsRule.run(server({ [key]: 'secret-value-12345' }));
+    expect(f).toHaveLength(1);
+    expect(f[0]!.ruleId).toBe('MCPG001');
+  });
+
   it('flags case-insensitive matches', () => {
     const f = secretsRule.run(server({ github_token: 'ghp_aaaaaaaaaaaaaaaa' }));
     expect(f).toHaveLength(1);
+  });
+
+  it('returns expected finding shape', () => {
+    const f = secretsRule.run(server({ API_KEY: 'secret-value-12345' }));
+    expect(f[0]).toMatchObject({
+      title: 'Secret-like value in environment variables',
+      recommendation:
+        'Move secrets to a secure secret manager or prompt-based auth flow. Avoid committing real values.',
+      path: 'mcpServers.s.env.API_KEY',
+    });
+  });
+
+  it('does not include the secret value anywhere in serialized finding output', () => {
+    const secret = 'super_secret_value_12345';
+    const f = secretsRule.run(server({ API_KEY: secret }));
+    expect(JSON.stringify(f[0])).not.toContain(secret);
   });
 
   it('does not flag non-secret keys', () => {
