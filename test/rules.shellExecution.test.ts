@@ -40,6 +40,21 @@ describe('shellExecutionRule (MCPG002)', () => {
     expect(f[0]!.message).toContain('/c');
   });
 
+  it('mentions /C flag for cmd preserving original case', () => {
+    const f = shellExecutionRule.run(server('cmd', ['/C', 'dir']));
+    expect(f[0]!.message).toContain('/C');
+  });
+
+  it('mentions --Command flag preserving original case', () => {
+    const f = shellExecutionRule.run(server('pwsh', ['--Command', 'Get-ChildItem']));
+    expect(f[0]!.message).toContain('--Command');
+  });
+
+  it.each(['-e', '--eval', '--command'])('mentions %s flag in message when present', (flag) => {
+    const f = shellExecutionRule.run(server('bash', [flag, 'echo hi']));
+    expect(f[0]!.message).toContain(flag);
+  });
+
   it('does not flag node', () => {
     expect(shellExecutionRule.run(server('node'))).toEqual([]);
   });

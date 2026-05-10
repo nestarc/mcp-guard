@@ -10,7 +10,7 @@ export const shellExecutionRule: Rule = {
     if (!server.command) return [];
     const basename = commandBasename(server.command);
     if (!SHELLS.has(basename)) return [];
-    const flags = (server.args ?? []).filter((a) => EVAL_FLAGS.has(a));
+    const flags = (server.args ?? []).filter((a) => EVAL_FLAGS.has(a.toLowerCase()));
     const flagSuffix = flags.length > 0 ? ` (with eval flag: ${flags.join(', ')})` : '';
     return [
       {
