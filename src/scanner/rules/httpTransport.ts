@@ -9,6 +9,10 @@ function parseUrl(input: string | undefined): URL | null {
   }
 }
 
+function safeUrlForMessage(url: URL): string {
+  return url.origin;
+}
+
 function isLoopback(host: string): boolean {
   const h = host.toLowerCase();
   return h === 'localhost' || h === '127.0.0.1' || h === '[::1]' || h === '::1';
@@ -55,7 +59,7 @@ export const plainHttpRule: Rule = {
         severity: 'medium',
         server: server.name,
         title: 'Plain HTTP transport',
-        message: `Server URL uses plain HTTP: ${server.url}`,
+        message: `Server URL uses plain HTTP: ${safeUrlForMessage(url)}`,
         recommendation: 'Prefer authenticated HTTPS or a trusted local-only transport.',
         path: `mcpServers.${server.name}.url`,
       },

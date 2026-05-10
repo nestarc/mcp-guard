@@ -35,6 +35,15 @@ describe('plainHttpRule (MCPG004)', () => {
     });
   });
 
+  it('does not leak credentials or query parameters in MCPG004 message', () => {
+    const message = plainHttpRule.run(server('http://user:secret@example.com/mcp?api_key=abc123'))[0]!
+      .message;
+
+    expect(message).toContain('http://example.com');
+    expect(message).not.toContain('secret');
+    expect(message).not.toContain('api_key=abc123');
+  });
+
   it('flags http://example.com as medium', () => {
     expect(plainHttpRule.run(server('http://example.com'))[0]!.severity).toBe('medium');
   });
