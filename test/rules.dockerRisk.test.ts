@@ -10,11 +10,28 @@ const server = (command?: string, args?: string[]): McpServerConfig => ({
 });
 
 describe('dockerRiskRule (MCPG006)', () => {
+  it('has MCPG006 rule id', () => {
+    expect(dockerRiskRule.id).toBe('MCPG006');
+  });
+
   it('flags --privileged', () => {
     const f = dockerRiskRule.run(server('docker', ['run', '--privileged', 'image']));
     expect(f).toHaveLength(1);
     expect(f[0]!.severity).toBe('high');
     expect(f[0]!.ruleId).toBe('MCPG006');
+  });
+
+  it('reports MCPG006 finding shape', () => {
+    expect(dockerRiskRule.run(server('docker', ['run', '--privileged', 'image']))[0]).toEqual({
+      ruleId: 'MCPG006',
+      severity: 'high',
+      server: 's',
+      title: 'Docker privileged or socket access',
+      message: 'Container runtime arguments grant elevated host access: --privileged flag.',
+      recommendation:
+        'Avoid --privileged and host root or docker.sock mounts. Mount only specific paths needed by the server.',
+      path: 'mcpServers.s.args',
+    });
   });
 
   it('flags -v with docker.sock mount', () => {
