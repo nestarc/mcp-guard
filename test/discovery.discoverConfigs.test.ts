@@ -61,13 +61,36 @@ describe('discoverConfigs', () => {
     });
   });
 
+  it('ignores directory candidates at config file paths', async () => {
+    await withTempDir(async (dir) => {
+      const file = path.join(dir, '.cursor', 'mcp.json');
+      await mkdir(file, { recursive: true });
+
+      const targets = await discoverConfigs({
+        candidates: [
+          {
+            client: 'cursor',
+            scope: 'project',
+            label: 'cursor project',
+            path: file,
+          },
+        ],
+      });
+
+      expect(targets).toEqual([]);
+    });
+  });
+
   it('deduplicates candidates that resolve to the same real path and preserves labels', async () => {
     await withTempDir(async (dir) => {
       const file = path.join(dir, 'mcp.json');
+      const nestedDir = path.join(dir, 'nested');
+      const fileWithParentSegment = `${nestedDir}${path.sep}..${path.sep}mcp.json`;
+      await mkdir(nestedDir);
       await writeFile(file, '{"mcpServers":{}}');
       const candidates: CandidatePath[] = [
         { client: 'cursor', scope: 'project', label: 'cursor project', path: file },
-        { client: 'vscode', scope: 'project', label: 'vscode project', path: file },
+        { client: 'vscode', scope: 'project', label: 'vscode project', path: fileWithParentSegment },
       ];
 
       const targets = await discoverConfigs({ candidates });

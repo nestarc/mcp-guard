@@ -1,12 +1,18 @@
-import { constants } from 'node:fs';
-import { access, realpath } from 'node:fs/promises';
+import { open, realpath, stat } from 'node:fs/promises';
 import { buildCandidatePaths } from './candidatePaths.js';
 import type { DiscoverConfigOptions, DiscoveredTarget } from './types.js';
 
-async function isReadable(filePath: string): Promise<boolean> {
+async function isReadableFile(filePath: string): Promise<boolean> {
   try {
-    await access(filePath, constants.R_OK);
-    return true;
+    const info = await stat(filePath);
+    if (!info.isFile()) return false;
+
+    const handle = await open(filePath, 'r');
+    try {
+      return true;
+    } finally {
+      await handle.close();
+    }
   } catch {
     return false;
   }
@@ -17,7 +23,7 @@ export async function discoverConfigs(opts: DiscoverConfigOptions = {}): Promise
   const byRealPath = new Map<string, DiscoveredTarget>();
 
   for (const candidate of candidates) {
-    if (!(await isReadable(candidate.path))) continue;
+    if (!(await isReadableFile(candidate.path))) continue;
 
     let resolved = candidate.path;
     try {
