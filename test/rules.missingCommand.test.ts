@@ -24,8 +24,16 @@ describe('missingCommandRule (MCPG009)', () => {
     expect(missingCommandRule.run(server({ command: 'node' }))).toEqual([]);
   });
 
+  it('does not flag when command is an empty string', () => {
+    expect(missingCommandRule.run(server({ command: '' }))).toEqual([]);
+  });
+
   it('does not flag when url present', () => {
     expect(missingCommandRule.run(server({ url: 'https://x' }))).toEqual([]);
+  });
+
+  it('does not flag when url is an empty string', () => {
+    expect(missingCommandRule.run(server({ url: '' }))).toEqual([]);
   });
 
   it('reports MCPG009 finding shape', () => {
@@ -33,9 +41,10 @@ describe('missingCommandRule (MCPG009)', () => {
       ruleId: 'MCPG009',
       severity: 'info',
       server: 's',
-      title: 'Server entry missing command or url',
-      message: 'Server entry does not define a command or url.',
-      recommendation: 'Define a command for stdio servers or url for remote servers.',
+      title: 'Missing command or url',
+      message: 'Server entry has neither a string `command` nor a string `url`.',
+      recommendation:
+        'Verify the entry is intentional. The server cannot be launched without one of these.',
       path: 'mcpServers.s',
     });
   });

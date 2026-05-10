@@ -3,15 +3,16 @@ import type { Finding, McpServerConfig, Rule } from '../../types.js';
 export const missingCommandRule: Rule = {
   id: 'MCPG009',
   run(server: McpServerConfig): Finding[] {
-    if (server.command || server.url) return [];
+    if (typeof server.command === 'string' || typeof server.url === 'string') return [];
     return [
       {
         ruleId: 'MCPG009',
         severity: 'info',
         server: server.name,
-        title: 'Server entry missing command or url',
-        message: 'Server entry does not define a command or url.',
-        recommendation: 'Define a command for stdio servers or url for remote servers.',
+        title: 'Missing command or url',
+        message: 'Server entry has neither a string `command` nor a string `url`.',
+        recommendation:
+          'Verify the entry is intentional. The server cannot be launched without one of these.',
         path: `mcpServers.${server.name}`,
       },
     ];
