@@ -93,6 +93,28 @@ For clean installs in CI or a fresh checkout with an existing lockfile, use:
 npm ci
 ```
 
+## Release
+
+Releases are published to npm from GitHub Actions when a GitHub Release is published.
+
+Before the first release, configure npm Trusted Publishing for `@nestarc/mcp-guard` with:
+
+| Field | Value |
+| --- | --- |
+| Repository | `nestarc/mcp-guard` |
+| Workflow | `.github/workflows/release.yml` |
+
+To publish a release:
+
+```bash
+npm version patch
+git push --follow-tags
+```
+
+Then create and publish a GitHub Release for the version tag, such as `v0.1.0`.
+
+The release workflow runs `npm ci`, `npm run typecheck`, `npm test`, `npm run build`, and `npm pack --dry-run`, then publishes with provenance using `npm publish --access public --provenance`.
+
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for notable changes.
