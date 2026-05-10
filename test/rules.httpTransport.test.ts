@@ -99,6 +99,14 @@ describe('publicRemoteEndpointRule (MCPG008)', () => {
     expect(publicRemoteEndpointRule.run(server('https://127.0.0.1:3000'))).toEqual([]);
   });
 
+  it('does not flag https://127.0.0.2 (IPv4 loopback)', () => {
+    expect(publicRemoteEndpointRule.run(server('https://127.0.0.2'))).toEqual([]);
+  });
+
+  it('does not flag https://127.1.2.3 (IPv4 loopback)', () => {
+    expect(publicRemoteEndpointRule.run(server('https://127.1.2.3'))).toEqual([]);
+  });
+
   it('does not flag https://10.0.0.5 (RFC1918)', () => {
     expect(publicRemoteEndpointRule.run(server('https://10.0.0.5:3000'))).toEqual([]);
   });
