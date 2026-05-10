@@ -84,6 +84,21 @@ describe('renderText', () => {
     expect(out).toBe('mcp-guard scan ~/mcp.json\n\nRisk: INFO\nServers scanned: 1\nFindings: 0\n');
   });
 
+  it('redacts embedded home path in target output', () => {
+    const out = renderText(
+      {
+        schemaVersion: '1',
+        target: 'config at /Users/alice/mcp.json',
+        summary: { risk: 'info', serversScanned: 0, findings: 0 },
+        findings: [],
+      },
+      { color: false, home: '/Users/alice' }
+    );
+
+    expect(out).toContain('config at ~/mcp.json');
+    expect(out).not.toContain('/Users/alice');
+  });
+
   it('does not render Recommendation or undefined for findings without recommendation', () => {
     const out = renderText(
       {

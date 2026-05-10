@@ -77,7 +77,7 @@ export function renderText(result: ScanResult, opts: TextReporterOptions = {}): 
   const quiet = opts.quiet ?? false;
   const home = opts.home ?? os.homedir();
 
-  const target = redactHome(result.target, home);
+  const target = redactHomeInText(result.target, home);
   const lines: string[] = [];
   lines.push(`mcp-guard scan ${target}`);
   lines.push('');
