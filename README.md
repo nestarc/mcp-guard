@@ -102,7 +102,7 @@ Before the first release, configure npm Trusted Publishing for `@nestarc/mcp-gua
 | Field | Value |
 | --- | --- |
 | Repository | `nestarc/mcp-guard` |
-| Workflow | `.github/workflows/release.yml` |
+| Workflow filename | `release.yml` |
 
 To publish a release:
 
