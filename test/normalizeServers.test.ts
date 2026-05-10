@@ -38,6 +38,25 @@ describe('normalizeServers', () => {
     expect(warn).toEqual([]);
   });
 
+  it('extracts Claude Code local-scope project mcpServers from .claude.json shape', () => {
+    const result = normalizeServers({
+      projects: {
+        '/Users/alice/project': {
+          mcpServers: {
+            stripe: { type: 'http', url: 'https://mcp.stripe.com' },
+          },
+        },
+      },
+    });
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      name: 'stripe',
+      type: 'http',
+      url: 'https://mcp.stripe.com',
+    });
+  });
+
   it('returns empty array and warns when neither key present', () => {
     const warn: string[] = [];
     const result = normalizeServers({}, { onWarn: (m) => warn.push(m) });

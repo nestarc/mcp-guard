@@ -83,6 +83,44 @@ describe('scanDiscoveredTargets', () => {
     });
   });
 
+  it('marks unsupported discovered config shapes as not scanned', async () => {
+    await withTempDir(async (dir) => {
+      const unsupported = path.join(dir, 'empty-shape.json');
+      await writeFile(unsupported, '{}');
+      const warnings: string[] = [];
+
+      const result = await scanDiscoveredTargets([target(unsupported, 'unsupported')], {
+        onWarn: (message) => warnings.push(message),
+      });
+
+      expect(result.summary.targetsDiscovered).toBe(1);
+      expect(result.summary.targetsScanned).toBe(0);
+      expect(result.targets[0]).toMatchObject({
+        scanned: false,
+        serversScanned: 0,
+        findings: 0,
+      });
+      expect(result.targets[0]!.warning).toMatch(/mcpServers|servers/);
+      expect(warnings.join('\n')).toMatch(/mcpServers|servers/);
+    });
+  });
+
+  it('counts valid empty server maps as scanned', async () => {
+    await withTempDir(async (dir) => {
+      const emptyMap = path.join(dir, 'empty-map.json');
+      await writeFile(emptyMap, JSON.stringify({ mcpServers: {} }));
+
+      const result = await scanDiscoveredTargets([target(emptyMap, 'empty')]);
+
+      expect(result.summary.targetsScanned).toBe(1);
+      expect(result.targets[0]).toMatchObject({
+        scanned: true,
+        serversScanned: 0,
+        findings: 0,
+      });
+    });
+  });
+
   it('returns an empty aggregate result for no targets', async () => {
     const result = await scanDiscoveredTargets([]);
 

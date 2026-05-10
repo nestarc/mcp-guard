@@ -50,69 +50,91 @@ function isServerMap(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
+function serverMapFor(obj: Record<string, unknown>): Record<string, unknown> | undefined {
+  return isServerMap(obj['mcpServers'])
+    ? obj['mcpServers']
+    : isServerMap(obj['servers'])
+      ? obj['servers']
+      : undefined;
+}
+
+function collectServerMaps(obj: Record<string, unknown>): Record<string, unknown>[] {
+  const maps: Record<string, unknown>[] = [];
+  const topLevelMap = serverMapFor(obj);
+  if (topLevelMap) maps.push(topLevelMap);
+
+  if (isServerMap(obj['projects'])) {
+    for (const project of Object.values(obj['projects'])) {
+      if (!isServerMap(project)) continue;
+      const projectMap = serverMapFor(project);
+      if (projectMap) maps.push(projectMap);
+    }
+  }
+
+  return maps;
+}
+
 export function normalizeServers(raw: unknown, opts: NormalizeOptions = {}): McpServerConfig[] {
   if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
     throw new LoadError('Top-level value must be an object');
   }
 
   const obj = raw as Record<string, unknown>;
-  const map = isServerMap(obj['mcpServers'])
-    ? obj['mcpServers']
-    : isServerMap(obj['servers'])
-      ? obj['servers']
-      : undefined;
-  if (!map) {
+  const maps = collectServerMaps(obj);
+  if (maps.length === 0) {
     opts.onWarn?.('No `mcpServers` or `servers` key found at top level.');
     return [];
   }
 
   const out: McpServerConfig[] = [];
-  for (const [name, entry] of Object.entries(map)) {
-    const parsed = EntrySchema.safeParse(entry);
-    if (parsed.success) {
-      out.push(
-        buildServerConfig(
-          name,
-          {
-            command: parsed.data.command,
-            args: parsed.data.args,
-            env: parsed.data.env,
-            headers: parsed.data.headers,
-            envFile: parsed.data.envFile,
-            url: parsed.data.url,
-            transport: parsed.data.transport,
-            type: parsed.data.type,
-          },
-          entry
-        )
-      );
-    } else {
-      const e = (entry ?? {}) as Record<string, unknown>;
-      out.push(
-        buildServerConfig(
-          name,
-          {
-            command: typeof e['command'] === 'string' ? e['command'] : undefined,
-            args:
-              Array.isArray(e['args']) && e['args'].every((x) => typeof x === 'string')
-                ? e['args']
-                : undefined,
-            env:
-              e['env'] && typeof e['env'] === 'object' && !Array.isArray(e['env'])
-                ? (e['env'] as Record<string, unknown>)
-                : undefined,
-            headers:
-              e['headers'] && typeof e['headers'] === 'object' && !Array.isArray(e['headers'])
-                ? (e['headers'] as Record<string, unknown>)
-                : undefined,
-            envFile: typeof e['envFile'] === 'string' ? e['envFile'] : undefined,
-            url: typeof e['url'] === 'string' ? e['url'] : undefined,
-            transport: typeof e['transport'] === 'string' ? e['transport'] : undefined,
-            type: typeof e['type'] === 'string' ? e['type'] : undefined,
-          },
-          entry
-        )
-      );
+  for (const map of maps) {
+    for (const [name, entry] of Object.entries(map)) {
+      const parsed = EntrySchema.safeParse(entry);
+      if (parsed.success) {
+        out.push(
+          buildServerConfig(
+            name,
+            {
+              command: parsed.data.command,
+              args: parsed.data.args,
+              env: parsed.data.env,
+              headers: parsed.data.headers,
+              envFile: parsed.data.envFile,
+              url: parsed.data.url,
+              transport: parsed.data.transport,
+              type: parsed.data.type,
+            },
+            entry
+          )
+        );
+      } else {
+        const e = (entry ?? {}) as Record<string, unknown>;
+        out.push(
+          buildServerConfig(
+            name,
+            {
+              command: typeof e['command'] === 'string' ? e['command'] : undefined,
+              args:
+                Array.isArray(e['args']) && e['args'].every((x) => typeof x === 'string')
+                  ? e['args']
+                  : undefined,
+              env:
+                e['env'] && typeof e['env'] === 'object' && !Array.isArray(e['env'])
+                  ? (e['env'] as Record<string, unknown>)
+                  : undefined,
+              headers:
+                e['headers'] && typeof e['headers'] === 'object' && !Array.isArray(e['headers'])
+                  ? (e['headers'] as Record<string, unknown>)
+                  : undefined,
+              envFile: typeof e['envFile'] === 'string' ? e['envFile'] : undefined,
+              url: typeof e['url'] === 'string' ? e['url'] : undefined,
+              transport: typeof e['transport'] === 'string' ? e['transport'] : undefined,
+              type: typeof e['type'] === 'string' ? e['type'] : undefined,
+            },
+            entry
+          )
+        );
+      }
     }
   }
   return out;

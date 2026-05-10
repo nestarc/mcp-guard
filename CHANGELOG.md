@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-10
+
 ### Added
 
 - `mcp-guard scan --all` discovery mode for known Cursor, VS Code, Claude Code, and Claude Desktop MCP config locations.

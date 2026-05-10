@@ -55,14 +55,26 @@ export async function scanDiscoveredTargets(
       const servers = normalizeServers(raw, {
         onWarn: (message) => localWarnings.push(redactHomeInText(message)),
       });
+      const warning =
+        localWarnings.length === 0 ? undefined : redactHomeInText(localWarnings.join(' '));
+      if (servers.length === 0 && warning !== undefined) {
+        opts.onWarn?.(`${redactHomeInText(target.path)}: ${warning}`);
+        targetResults.push({
+          ...metadata,
+          scanned: false,
+          serversScanned: 0,
+          findings: 0,
+          warning,
+        });
+        continue;
+      }
+
       const targetFindings = servers.flatMap((server) => scanServer(server, rules));
       const aggregateFindings = attachTarget(targetFindings, target);
       findings.push(...aggregateFindings);
       serversScanned += servers.length;
       targetsScanned += 1;
 
-      const warning =
-        localWarnings.length === 0 ? undefined : redactHomeInText(localWarnings.join(' '));
       if (warning !== undefined) {
         opts.onWarn?.(`${redactHomeInText(target.path)}: ${warning}`);
       }
