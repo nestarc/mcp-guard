@@ -93,6 +93,10 @@ For clean installs in CI or a fresh checkout with an existing lockfile, use:
 npm ci
 ```
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for notable changes.
+
 ## License
 
 Apache-2.0

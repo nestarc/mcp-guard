@@ -15,7 +15,7 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": ["dist", "README.md", "CHANGELOG.md", "LICENSE"],
   "scripts": {
     "dev": "tsx src/cli.ts",
     "build": "tsup",
