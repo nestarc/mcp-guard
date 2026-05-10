@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { execFile } from 'node:child_process';
+import { copyFile, mkdir, rm } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import path from 'node:path';
 
@@ -7,8 +8,7 @@ const exec = promisify(execFile);
 
 const fixture = (name: string) => path.resolve('test/fixtures', name);
 const cli = path.resolve('src/cli.ts');
-const isWindows = process.platform === 'win32';
-const tsxBin = path.resolve('node_modules', '.bin', isWindows ? 'tsx.cmd' : 'tsx');
+const tsxCli = path.resolve('node_modules', 'tsx', 'dist', 'cli.mjs');
 
 interface CliResult {
   stdout: string;
@@ -18,9 +18,8 @@ interface CliResult {
 
 async function runCli(args: string[], expectFail = false): Promise<CliResult> {
   try {
-    const { stdout, stderr } = await exec(tsxBin, [cli, ...args], {
+    const { stdout, stderr } = await exec(process.execPath, [tsxCli, cli, ...args], {
       env: { ...process.env, NO_COLOR: '1' },
-      shell: isWindows,
     });
     return { stdout, stderr, code: 0 };
   } catch (err: unknown) {
@@ -34,12 +33,35 @@ async function runCli(args: string[], expectFail = false): Promise<CliResult> {
   }
 }
 
+async function withSpacedFixture(): Promise<{ file: string; cleanup: () => Promise<void> }> {
+  const dir = path.resolve('test/fixtures', 'cli path with spaces');
+  const file = path.join(dir, 'safe file.json');
+  await mkdir(dir, { recursive: true });
+  await copyFile(fixture('safe.json'), file);
+  return {
+    file,
+    cleanup: () => rm(dir, { recursive: true, force: true }),
+  };
+}
+
 describe('cli scan', () => {
   it('safe.json exits 0 with text containing Risk:', async () => {
     const result = await runCli(['scan', fixture('safe.json')]);
 
     expect(result.code).toBe(0);
     expect(result.stdout).toContain('Risk:');
+  });
+
+  it('scans fixture paths containing spaces', async () => {
+    const spaced = await withSpacedFixture();
+    try {
+      const result = await runCli(['scan', spaced.file]);
+
+      expect(result.code).toBe(0);
+      expect(result.stdout).toContain('Risk:');
+    } finally {
+      await spaced.cleanup();
+    }
   });
 
   it('risky.json --fail-on high exits 1', async () => {
@@ -91,6 +113,24 @@ describe('cli scan', () => {
 
   it('invalid --fail-on exits 2', async () => {
     const result = await runCli(['scan', fixture('safe.json'), '--fail-on', 'bogus'], true);
+
+    expect(result.code).toBe(2);
+  });
+
+  it('missing scan path exits 2', async () => {
+    const result = await runCli(['scan'], true);
+
+    expect(result.code).toBe(2);
+  });
+
+  it('unknown scan option exits 2', async () => {
+    const result = await runCli(['scan', fixture('safe.json'), '--bogus'], true);
+
+    expect(result.code).toBe(2);
+  });
+
+  it('unknown command exits 2', async () => {
+    const result = await runCli(['bogus'], true);
 
     expect(result.code).toBe(2);
   });

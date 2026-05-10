@@ -1,4 +1,4 @@
-import { Command } from 'commander';
+import { Command, CommanderError } from 'commander';
 import { renderJson } from './reporters/jsonReporter.js';
 import { renderText } from './reporters/textReporter.js';
 import { scan } from './scanner/scan.js';
@@ -76,6 +76,7 @@ async function main(): Promise<void> {
     .name('mcp-guard')
     .description('Security scanner for MCP servers and configurations.')
     .version('0.1.0');
+  program.exitOverride();
 
   program
     .command('scan')
@@ -90,14 +91,22 @@ async function main(): Promise<void> {
     .option('--quiet', 'print only the summary')
     .action(async (target: string, options: ScanOptions) => {
       const code = await runScan(target, options);
-      process.exit(code);
+      process.exitCode = code;
     });
 
-  await program.parseAsync(process.argv);
+  try {
+    await program.parseAsync(process.argv);
+  } catch (err) {
+    if (err instanceof CommanderError) {
+      process.exitCode = err.exitCode === 0 ? 0 : 2;
+      return;
+    }
+    throw err;
+  }
 }
 
 main().catch((err: unknown) => {
   const message = err instanceof Error ? err.message : String(err);
   process.stderr.write(`unexpected error: ${message}\n`);
-  process.exit(2);
+  process.exitCode = 2;
 });
