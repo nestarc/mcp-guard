@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { execFile } from 'node:child_process';
-import { copyFile, mkdir, rm } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import { promisify } from 'node:util';
 import path from 'node:path';
@@ -17,14 +17,21 @@ interface CliResult {
   code: number;
 }
 
-async function runCli(args: string[], expectFail = false): Promise<CliResult> {
+interface RunCliOptions {
+  expectFail?: boolean;
+  cwd?: string;
+  env?: Record<string, string | undefined>;
+}
+
+async function runCli(args: string[], options: RunCliOptions = {}): Promise<CliResult> {
   try {
     const { stdout, stderr } = await exec(process.execPath, [tsxCli, cli, ...args], {
-      env: { ...process.env, NO_COLOR: '1' },
+      cwd: options.cwd,
+      env: { ...process.env, ...options.env, NO_COLOR: '1' },
     });
     return { stdout, stderr, code: 0 };
   } catch (err: unknown) {
-    if (!expectFail) throw err;
+    if (!options.expectFail) throw err;
     const failed = err as { stdout?: string; stderr?: string; code?: number };
     return {
       stdout: failed.stdout ?? '',
@@ -41,6 +48,17 @@ async function withSpacedFixture(): Promise<{ file: string; cleanup: () => Promi
   await copyFile(fixture('safe.json'), file);
   return {
     file,
+    cleanup: () => rm(dir, { recursive: true, force: true }),
+  };
+}
+
+async function withScanAllFixture(): Promise<{ dir: string; cleanup: () => Promise<void> }> {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'mcp-guard-cli-'));
+  const cursorDir = path.join(dir, '.cursor');
+  await mkdir(cursorDir, { recursive: true });
+  await copyFile(fixture('public-https.json'), path.join(cursorDir, 'mcp.json'));
+  return {
+    dir,
     cleanup: () => rm(dir, { recursive: true, force: true }),
   };
 }
@@ -66,7 +84,9 @@ describe('cli scan', () => {
   });
 
   it('risky.json --fail-on high exits 1', async () => {
-    const result = await runCli(['scan', fixture('risky.json'), '--fail-on', 'high'], true);
+    const result = await runCli(['scan', fixture('risky.json'), '--fail-on', 'high'], {
+      expectFail: true,
+    });
 
     expect(result.code).toBe(1);
   });
@@ -100,7 +120,7 @@ describe('cli scan', () => {
   });
 
   it('malformed.json exits 2 and stderr mentions parse or failed', async () => {
-    const result = await runCli(['scan', fixture('malformed.json')], true);
+    const result = await runCli(['scan', fixture('malformed.json')], { expectFail: true });
 
     expect(result.code).toBe(2);
     expect(result.stderr).toMatch(/parse|failed/i);
@@ -108,32 +128,38 @@ describe('cli scan', () => {
   });
 
   it('non-existent file exits 2', async () => {
-    const result = await runCli(['scan', fixture('does-not-exist.json')], true);
+    const result = await runCli(['scan', fixture('does-not-exist.json')], {
+      expectFail: true,
+    });
 
     expect(result.code).toBe(2);
     expect(result.stderr).not.toContain(os.homedir());
   });
 
   it('invalid --fail-on exits 2', async () => {
-    const result = await runCli(['scan', fixture('safe.json'), '--fail-on', 'bogus'], true);
+    const result = await runCli(['scan', fixture('safe.json'), '--fail-on', 'bogus'], {
+      expectFail: true,
+    });
 
     expect(result.code).toBe(2);
   });
 
   it('missing scan path exits 2', async () => {
-    const result = await runCli(['scan'], true);
+    const result = await runCli(['scan'], { expectFail: true });
 
     expect(result.code).toBe(2);
   });
 
   it('unknown scan option exits 2', async () => {
-    const result = await runCli(['scan', fixture('safe.json'), '--bogus'], true);
+    const result = await runCli(['scan', fixture('safe.json'), '--bogus'], {
+      expectFail: true,
+    });
 
     expect(result.code).toBe(2);
   });
 
   it('unknown command exits 2', async () => {
-    const result = await runCli(['bogus'], true);
+    const result = await runCli(['bogus'], { expectFail: true });
 
     expect(result.code).toBe(2);
   });
@@ -181,5 +207,75 @@ describe('cli scan', () => {
 
     expect(result.code).toBe(0);
     expect(result.stderr).toMatch(/mcpServers/);
+  });
+
+  it('scan --all outputs aggregate text for discovered targets', async () => {
+    const fixtureDir = await withScanAllFixture();
+    try {
+      const result = await runCli(['scan', '--all', '--scope', 'project'], { cwd: fixtureDir.dir });
+
+      expect(result.code).toBe(0);
+      expect(result.stdout).toContain('mcp-guard scan --all');
+      expect(result.stdout).toContain('Targets scanned: 1/1');
+      expect(result.stdout).toContain('MCPG008');
+    } finally {
+      await fixtureDir.cleanup();
+    }
+  });
+
+  it('scan --all --json outputs aggregate schema version 2', async () => {
+    const fixtureDir = await withScanAllFixture();
+    try {
+      const result = await runCli(['scan', '--all', '--scope', 'project', '--json'], {
+        cwd: fixtureDir.dir,
+      });
+      const parsed = JSON.parse(result.stdout);
+
+      expect(parsed.schemaVersion).toBe('2');
+      expect(parsed.summary.targetsScanned).toBe(1);
+      expect(parsed.findings[0].target.client).toBe('cursor');
+    } finally {
+      await fixtureDir.cleanup();
+    }
+  });
+
+  it('scan --all --fail-on high exits 1 for high findings', async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'mcp-guard-cli-high-'));
+    try {
+      const cursorDir = path.join(dir, '.cursor');
+      await mkdir(cursorDir, { recursive: true });
+      await copyFile(fixture('risky.json'), path.join(cursorDir, 'mcp.json'));
+
+      const result = await runCli(['scan', '--all', '--scope', 'project', '--fail-on', 'high'], {
+        cwd: dir,
+        expectFail: true,
+      });
+
+      expect(result.code).toBe(1);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('scan --all --list-targets lists discovered targets without scanning', async () => {
+    const fixtureDir = await withScanAllFixture();
+    try {
+      const result = await runCli(['scan', '--all', '--scope', 'project', '--list-targets'], {
+        cwd: fixtureDir.dir,
+      });
+
+      expect(result.code).toBe(0);
+      expect(result.stdout).toContain('cursor project');
+      expect(result.stdout).toContain('.cursor');
+      expect(result.stdout).not.toContain('Risk:');
+    } finally {
+      await fixtureDir.cleanup();
+    }
+  });
+
+  it('scan <path> --all exits 2 because modes are mutually exclusive', async () => {
+    const result = await runCli(['scan', fixture('safe.json'), '--all'], { expectFail: true });
+
+    expect(result.code).toBe(2);
   });
 });
