@@ -6,6 +6,18 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ## [Unreleased]
 
+### Added
+
+- `mcp-guard scan --all` discovery mode for known Cursor, VS Code, Claude Code, and Claude Desktop MCP config locations.
+- `--client`, `--scope`, and `--list-targets` discovery options.
+- Aggregate JSON output with `schemaVersion: "2"` and target metadata for every finding.
+- Aggregate text output grouped by target and server.
+
+### Changed
+
+- Server normalization now preserves `headers`, `envFile`, and `type` fields from common MCP client configs.
+- `MCPG001` now scans secret-like header keys in addition to environment variables.
+
 ## [0.1.0] - 2026-05-10
 
 ### Added
